@@ -8,7 +8,7 @@ import { asyncHandler } from "../../shared/utils/asyncHandler.js";
 export const googleAuthRedirect = asyncHandler(async (req, res) => {
   const { redirect } = req.query;
 
-  const googleAuthUrl = `http://accounts.google.com/o/oauth2/auth?client_id=${process.env.GOOGLE_CLIENT_ID}&redirect_uri=${config.BACKEND_URL}/api/v1/auth/google/callback&response_type=code&scope=profile email&state=${redirect || "/"}`;
+  const googleAuthUrl = `https://accounts.google.com/o/oauth2/auth?client_id=${process.env.GOOGLE_CLIENT_ID}&redirect_uri=${config.BACKEND_URL}/api/v1/auth/google/callback&response_type=code&scope=profile email&state=${redirect || "/"}`;
 
   res.redirect(googleAuthUrl);
 });
