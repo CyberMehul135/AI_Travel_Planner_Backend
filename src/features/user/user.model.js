@@ -9,9 +9,25 @@ const userSchema = new mongoose.Schema(
     },
     name: {
       type: String,
+      default: "",
     },
     avtar: {
       type: String,
+    },
+    avtarId: {
+      type: String,
+    },
+    phone: {
+      type: String,
+      default: "",
+    },
+    location: {
+      type: String,
+      default: "",
+    },
+    bio: {
+      type: String,
+      default: "Always exited to Travel",
     },
   },
   { timestamps: true },

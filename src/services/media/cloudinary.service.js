@@ -1,5 +1,6 @@
 import dotenv from "dotenv";
 import { v2 as cloudinary } from "cloudinary";
+import fs from "fs";
 
 dotenv.config({ quiet: true });
 
@@ -26,6 +27,32 @@ export const directUploadOnCloudinary = async (imageUrl) => {
     return result;
   } catch (err) {
     console.error("Cloudinary Error:", err.message);
+    throw new Error("Image upload failed");
+  }
+};
+
+export const uploadOnCloudinary = async (filepath) => {
+  try {
+    if (!filepath) {
+      throw new Error("File path is required");
+    }
+
+    const result = await cloudinary.uploader.upload(filepath, {
+      folder: "ai-travel-planner/users",
+    });
+
+    // Temp file delete
+    fs.unlinkSync(filepath);
+
+    return result;
+  } catch (err) {
+    console.error("Cloudinary Upload Error: ", err.message);
+
+    // Temp file delete
+    if (filepath && fs.existsSync(filepath)) {
+      fs.unlinkSync(filepath);
+    }
+
     throw new Error("Image upload failed");
   }
 };
