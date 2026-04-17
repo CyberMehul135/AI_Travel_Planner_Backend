@@ -2,16 +2,8 @@ import multer from "multer";
 import path from "path";
 import { TEMP_UPLOAD_PATH } from "../../config/path.config.js";
 
-// Storage Config ( Temporary local storage )
-const storage = multer.diskStorage({
-  destination: function (req, file, cb) {
-    cb(null, TEMP_UPLOAD_PATH);
-  },
-  filename: function (req, file, cb) {
-    const uniqueName = Date.now() + path.extname(file.originalname);
-    cb(null, uniqueName);
-  },
-});
+// Storage ( No Temporary local storage )
+const storage = multer.memoryStorage();
 
 // File Filter ( Only Images Allowed )
 const fileFilter = (req, file, cb) => {

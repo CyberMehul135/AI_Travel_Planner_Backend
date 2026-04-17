@@ -38,7 +38,7 @@ export const updateUserDetails = asyncHandler(async (req, res) => {
     }
 
     // Image Upload
-    const image = await uploadOnCloudinary(req.file.path);
+    const image = await uploadOnCloudinary(req.file);
 
     updatedData.avtar = image.secure_url;
     updatedData.avtarId = image.public_id;

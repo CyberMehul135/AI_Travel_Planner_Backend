@@ -31,28 +31,25 @@ export const directUploadOnCloudinary = async (imageUrl) => {
   }
 };
 
-export const uploadOnCloudinary = async (filepath) => {
+export const uploadOnCloudinary = async (file) => {
   try {
-    if (!filepath) {
+    if (!file) {
       throw new Error("File path is required");
     }
 
-    const result = await cloudinary.uploader.upload(filepath, {
-      folder: "ai-travel-planner/users",
+    return await new Promise((resolve, reject) => {
+      cloudinary.uploader
+        .upload_stream(
+          { folder: "ai-travel-planner/users" },
+          (error, result) => {
+            if (error) return reject(error);
+            resolve(result);
+          },
+        )
+        .end(file.buffer);
     });
-
-    // Temp file delete
-    fs.unlinkSync(filepath);
-
-    return result;
   } catch (err) {
     console.error("Cloudinary Upload Error: ", err.message);
-
-    // Temp file delete
-    if (filepath && fs.existsSync(filepath)) {
-      fs.unlinkSync(filepath);
-    }
-
     throw new Error("Image upload failed");
   }
 };
