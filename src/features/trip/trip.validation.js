@@ -7,10 +7,10 @@ export const generateTripSchema = z.object({
     model: z.string().min(1, "Model is required"),
     userPrompt: z.object({
         destination: z.string().min(1, "Destination is required"),
-        travellers: z.number().min(1, "At least 1 traveller required"),
+        travellers: z.coerce.number().min(1, "At least 1 traveller required"),
         startDate: z.string().min(1, "Start date is required"),
         endDate: z.string().min(1, "End date is required"),
-        budget: z.number().min(1, "Budget is required"),
+        budget: z.coerce.number().min(1, "Budget is required"),
         interests: z.array(z.string()).min(1, "Select at least 1 interest"),
         accomodation: z.string().min(1, "Accommodation is required"),
         transportation: z.string().min(1, "Transportation is required"),
