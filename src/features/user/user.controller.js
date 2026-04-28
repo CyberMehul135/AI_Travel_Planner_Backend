@@ -6,6 +6,7 @@ import {
   deleteFromCloudinary,
   uploadOnCloudinary,
 } from "../../services/media/cloudinary.service.js";
+import { updateProfileSchema } from "./user.validation.js";
 
 export const getUserDetails = asyncHandler(async (req, res) => {
   const user = await User.findOne({ email: req.user.email });
@@ -15,22 +16,28 @@ export const getUserDetails = asyncHandler(async (req, res) => {
 
 export const updateUserDetails = asyncHandler(async (req, res) => {
   const { userId } = req.user;
-  const { name, email, phone, location, bio } = req.body;
 
-  // 1. Prepare Updated Object
-  const updatedData = {};
-  if (name) updatedData.name = name;
-  if (phone) updatedData.phone = phone;
-  if (location) updatedData.location = location;
-  if (bio) updatedData.bio = bio;
+  // 1. zod validation
+  const result = updateProfileSchema.safeParse(req.body)
+  if (!result.success) {
+    const errors = result.error.issues.map((err) => ({
+      field: err.path.join("."),
+      message: err.message
+    }));
 
-  // 2. Find User
+    throw new ApiError(400, "Validation failed", errors)
+  }
+
+  // 2. Safe data
+  const validatedData = result.data;
+
+  // 3. Find User
   let user = await User.findById(userId);
   if (!user) {
     throw new ApiError(404, "User not found");
   }
 
-  // 3. Update Cloudinary
+  // 4. Update Cloudinary
   if (req.file) {
     // Image Delete
     if (user.avtarId) {
@@ -40,12 +47,12 @@ export const updateUserDetails = asyncHandler(async (req, res) => {
     // Image Upload
     const image = await uploadOnCloudinary(req.file);
 
-    updatedData.avtar = image.secure_url;
-    updatedData.avtarId = image.public_id;
+    validatedData.avtar = image.secure_url;
+    validatedData.avtarId = image.public_id;
   }
 
-  // 4. Update DB
-  const updatedUser = await User.findByIdAndUpdate(userId, updatedData, {
+  // 5. Update DB
+  const updatedUser = await User.findByIdAndUpdate(userId, validatedData, {
     returnDocument: "after",
   });
 

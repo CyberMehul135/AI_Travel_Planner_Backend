@@ -16,25 +16,36 @@ import {
 } from "../../services/ai/openRouter.service.js";
 import { asyncHandler } from "../../shared/utils/asyncHandler.js";
 import { ApiError } from "../../shared/utils/ApiError.js";
+import { createTripSchema, generateAiRecommendedTripSchema, generateTripSchema } from "./trip.validation.js";
 
 dotenv.config({ quiet: true });
 
 export const generateTrip = asyncHandler(async (req, res) => {
-  const { userPrompt, provider, model } = req.body;
 
-  // 1. Generate-Trip with 'Gemini'/'OpenRouter'
+  // 1. zod validation
+  const result = generateTripSchema.safeParse(req.body)
+  if (!result.success) {
+    const errors = result.error.issues.map((err) => ({
+      field: err.path.join("."),
+      message: err.message
+    }));
+
+    throw new ApiError(400, "Validation failed", errors)
+  }
+
+  const { userPrompt, provider, model } = result.data
+
+  // 2. Generate-Trip with 'Gemini'/'OpenRouter'
   let aiData;
   if (provider === "gemini") {
     aiData = await generateTripAI(JSON.stringify(userPrompt), model);
   } else if (provider === "openRouter") {
     aiData = await openRouterAPI(JSON.stringify(userPrompt), model);
-  } else {
-    throw new Error("Invalid provider");
   }
 
   let data = JSON.parse(aiData);
 
-  // 2. Fetch & Add Image with 'Unsplash'
+  // 3. Fetch & Add Image with 'Unsplash'
   data.quickSummary.image = await fetchImage(data.quickSummary.destination);
 
   successResponse(res, 200, "Api worked Successfully", {
@@ -43,9 +54,21 @@ export const generateTrip = asyncHandler(async (req, res) => {
 });
 
 export const generateAiRecommendedTrip = asyncHandler(async (req, res) => {
-  const { provider, model } = req.body;
 
-  // 1. Generate-Trips with 'Gemini'/'openRouter'
+  // 1. zod validation
+  const result = generateAiRecommendedTripSchema.safeParse(req.body)
+  if (!result.success) {
+    const errors = result.error.issues.map((err) => ({
+      field: err.path.join("."),
+      message: err.message
+    }));
+
+    throw new ApiError(400, "Validation failed", errors)
+  }
+
+  const { provider, model } = result.data
+
+  // 2. Generate-Trips with 'Gemini'/'openRouter'
   let aiData;
   if (provider === "gemini") {
     aiData = await generateAIRecommendedTrip(model);
@@ -57,12 +80,14 @@ export const generateAiRecommendedTrip = asyncHandler(async (req, res) => {
 
   let trips = JSON.parse(aiData);
 
-  // 2. Safety check
+  // 3. Safety check
   if (!Array.isArray(trips)) {
-    throw new Error("AI did not return array");
+    throw new ApiError(400, "AI did not return array", [
+      { field: "trips", message: "AI did not return array" }
+    ]);
   }
 
-  // 3. Fetch & Add Images with 'Unsplash'
+  // 4. Fetch & Add Images with 'Unsplash'
   for (let trip of trips) {
     trip.quickSummary.image = await fetchImage(trip.quickSummary.destination);
   }
@@ -72,9 +97,19 @@ export const generateAiRecommendedTrip = asyncHandler(async (req, res) => {
 
 export const createTrip = asyncHandler(async (req, res) => {
   const { userId } = req.user;
-  const { quickSummary, itinerary } = req.body;
 
-  // 1. validate
+  // 1. zod validation
+  const result = createTripSchema.safeParse(req.body)
+  if (!result.success) {
+    const errors = result.error.issues.map((err) => ({
+      field: err.path.join("."),
+      message: err.message
+    }));
+
+    throw new ApiError(400, "Validation failed", errors)
+  }
+
+  const { quickSummary, itinerary } = result.data;
 
   // 2 upload to cloudinary
   const image = await directUploadOnCloudinary(quickSummary.image);
