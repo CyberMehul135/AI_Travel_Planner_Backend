@@ -25,7 +25,7 @@ export const updateUserDetails = asyncHandler(async (req, res) => {
       message: err.message
     }));
 
-    throw new ApiError(400, "Validation failed", errors)
+    throw new ApiError(400, "Validation failed", "Validation failed", errors)
   }
 
   // 2. Safe data

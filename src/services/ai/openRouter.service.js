@@ -5,7 +5,7 @@ import {
 } from "../ai/prompts/trip.prompt.js";
 import { ApiError } from "../../shared/utils/ApiError.js";
 
-export const openRouterAPI = async (userPrompt, model) => {
+export const generateTripFromUserInputOpenRouter = async (userPrompt, model) => {
   try {
     const response = await axios.post(
       "https://openrouter.ai/api/v1/chat/completions",
@@ -31,14 +31,17 @@ export const openRouterAPI = async (userPrompt, model) => {
     );
 
     if (!response.data?.choices || response.data.choices.length === 0) {
-      throw new Error("Invalid AI response: choices missing");
+      throw new ApiError(502, "Invalid AI response: choices missing from OpenRouter",
+        "AI service returned an unexpected response. Please try again.")
     }
 
     return response.data.choices[0].message.content;
   } catch (err) {
-    console.log("OpenRouter Error:", err.response?.data || err.message);
+    // Return ApiError directly if it's already an ApiError
+    if (err instanceof ApiError) {
+      throw err;
+    }
 
-    // Default values
     let statusCode = 500;
     let message = "AI service failed";
     let status = "UNKNOWN";
@@ -76,12 +79,41 @@ export const openRouterAPI = async (userPrompt, model) => {
         status,
       },
     ];
+    let clientMessage = "Failed to generate trip";
 
-    throw new ApiError(statusCode, message, errors);
+    // Lowercase message for checking
+    const lowerMessage = message.toLowerCase();
+
+    // High demand / overloaded / unavailable
+    if (
+      statusCode === 503 ||
+      lowerMessage.includes("high demand") ||
+      lowerMessage.includes("overloaded") ||
+      lowerMessage.includes("unavailable") ||
+      lowerMessage.includes("busy")
+    ) {
+      clientMessage =
+        "AI service is busy right now. Please try again later.";
+    }
+
+    // Rate limit / quota exceeded
+    if (
+      statusCode === 429 ||
+      lowerMessage.includes("quota") ||
+      lowerMessage.includes("rate limit") ||
+      lowerMessage.includes("too many requests") ||
+      lowerMessage.includes("credits") ||
+      lowerMessage.includes("usage limit")
+    ) {
+      clientMessage =
+        "AI request limit reached. Please try again later.";
+    }
+
+    throw new ApiError(statusCode, message, clientMessage, errors);
   }
 };
 
-export const generateOpenRouterRecommendedTrip = async (model) => {
+export const generateAiRecommendedTripOpenRouter = async (model) => {
   try {
     const response = await axios.post(
       "https://openrouter.ai/api/v1/chat/completions",
@@ -107,14 +139,17 @@ export const generateOpenRouterRecommendedTrip = async (model) => {
     );
 
     if (!response.data?.choices || response.data.choices.length === 0) {
-      throw new Error("Invalid AI response: choices missing");
+      throw new ApiError(502, "Invalid AI response: choices missing from OpenRouter",
+        "AI service returned an unexpected response. Please try again.")
     }
 
     return response.data.choices[0].message.content;
   } catch (err) {
-    console.log("OpenRouter Error:", err.response?.data || err.message);
+    // Return ApiError directly if it's already an ApiError
+    if (err instanceof ApiError) {
+      throw err;
+    }
 
-    // Default values
     let statusCode = 500;
     let message = "AI service failed";
     let status = "UNKNOWN";
@@ -152,7 +187,36 @@ export const generateOpenRouterRecommendedTrip = async (model) => {
         status,
       },
     ];
+    let clientMessage = "Failed to generate trip";
 
-    throw new ApiError(statusCode, message, errors);
+    // Lowercase message for checking
+    const lowerMessage = message.toLowerCase();
+
+    // High demand / overloaded / unavailable
+    if (
+      statusCode === 503 ||
+      lowerMessage.includes("high demand") ||
+      lowerMessage.includes("overloaded") ||
+      lowerMessage.includes("unavailable") ||
+      lowerMessage.includes("busy")
+    ) {
+      clientMessage =
+        "AI service is busy right now. Please try again later.";
+    }
+
+    // Rate limit / quota exceeded
+    if (
+      statusCode === 429 ||
+      lowerMessage.includes("quota") ||
+      lowerMessage.includes("rate limit") ||
+      lowerMessage.includes("too many requests") ||
+      lowerMessage.includes("credits") ||
+      lowerMessage.includes("usage limit")
+    ) {
+      clientMessage =
+        "AI request limit reached. Please try again later.";
+    }
+
+    throw new ApiError(statusCode, message, clientMessage, errors);
   }
 };

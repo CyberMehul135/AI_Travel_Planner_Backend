@@ -1,16 +1,19 @@
 const errorHandler = (err, req, res, next) => {
-  console.log(err);
+
   let statusCode = err.statusCode || 500;
-  let message = err.message || "Internal Server Error";
+  let message = err.clientMessage ||
+    (statusCode >= 400 && statusCode < 500
+      ? err.message
+      : "Internal Server Error")
   let errors = err.errors || [];
 
-  // Invalid MongoDB ObjectId
+  // Invalid ObjectId (DB)
   if (err.name === "CastError") {
     statusCode = 400;
     message = `Invalid ${err.path}: ${err.value}`;
   }
 
-  // Duplicate key error (MongoDB)
+  // Duplicate key (DB)
   if (err.code === 11000) {
     statusCode = 400;
     message = `Duplicate field value entered`;
@@ -22,14 +25,14 @@ const errorHandler = (err, req, res, next) => {
     message = "Invalid JSON format";
   }
 
-  // Development vs Production logging
+  // Logging - Development vs Production
   if (process.env.NODE_ENV === "development") {
     console.error("ERROR (DEV):", err);
   } else {
-    console.error("ERROR:", message);
+    console.error("ERROR (PROD):", message);
   }
 
-  // Final Response
+  // Response
   res.status(statusCode).json({
     success: false,
     message,

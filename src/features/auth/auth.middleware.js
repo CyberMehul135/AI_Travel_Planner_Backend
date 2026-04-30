@@ -1,10 +1,12 @@
 import jwt from "jsonwebtoken";
+import { asyncHandler } from "../../shared/utils/asyncHandler.js";
+import { ApiError } from "../../shared/utils/ApiError.js";
 
-const authMiddleware = async (req, res, next) => {
+const authMiddleware = asyncHandler(async (req, res, next) => {
   const token = req.cookies.jwtToken;
 
   if (!token) {
-    res.status(401).json({ message: "Unauthorized" });
+    throw new ApiError(401, "JWT token missing", "Unauthorized access")
   }
 
   try {
@@ -12,8 +14,8 @@ const authMiddleware = async (req, res, next) => {
     req.user = decoded;
     next();
   } catch (err) {
-    return res.status(401).json({ message: "Invalid Token" });
+    throw new ApiError(401, "Invalid JWT token", "Invalid or expired token")
   }
-};
+})
 
 export default authMiddleware;

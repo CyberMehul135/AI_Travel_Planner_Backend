@@ -7,12 +7,12 @@ import {
 } from "../../services/media/cloudinary.service.js";
 import { fetchImage } from "../../services/media/unsplash.service.js";
 import {
-  generateAIRecommendedTrip,
-  generateTripAI,
+  generateAiRecommendedTripGemini,
+  generateTripFromUserInputGemini,
 } from "../../services/ai/gemini.service.js";
 import {
-  generateOpenRouterRecommendedTrip,
-  openRouterAPI,
+  generateAiRecommendedTripOpenRouter,
+  generateTripFromUserInputOpenRouter,
 } from "../../services/ai/openRouter.service.js";
 import { asyncHandler } from "../../shared/utils/asyncHandler.js";
 import { ApiError } from "../../shared/utils/ApiError.js";
@@ -30,7 +30,7 @@ export const generateTrip = asyncHandler(async (req, res) => {
       message: err.message
     }));
 
-    throw new ApiError(400, "Validation failed", errors)
+    throw new ApiError(400, "Validation failed", null, errors)
   }
 
   const { userPrompt, provider, model } = result.data
@@ -38,9 +38,9 @@ export const generateTrip = asyncHandler(async (req, res) => {
   // 2. Generate-Trip with 'Gemini'/'OpenRouter'
   let aiData;
   if (provider === "gemini") {
-    aiData = await generateTripAI(JSON.stringify(userPrompt), model);
+    aiData = await generateTripFromUserInputGemini(JSON.stringify(userPrompt), model);
   } else if (provider === "openRouter") {
-    aiData = await openRouterAPI(JSON.stringify(userPrompt), model);
+    aiData = await generateTripFromUserInputOpenRouter(JSON.stringify(userPrompt), model);
   }
 
   let data = JSON.parse(aiData);
@@ -63,7 +63,7 @@ export const generateAiRecommendedTrip = asyncHandler(async (req, res) => {
       message: err.message
     }));
 
-    throw new ApiError(400, "Validation failed", errors)
+    throw new ApiError(400, "Validation failed", null, errors)
   }
 
   const { provider, model } = result.data
@@ -71,18 +71,16 @@ export const generateAiRecommendedTrip = asyncHandler(async (req, res) => {
   // 2. Generate-Trips with 'Gemini'/'openRouter'
   let aiData;
   if (provider === "gemini") {
-    aiData = await generateAIRecommendedTrip(model);
+    aiData = await generateAiRecommendedTripGemini(model);
   } else if (provider === "openRouter") {
-    aiData = await generateOpenRouterRecommendedTrip(model);
-  } else {
-    throw new Error("Invalid provider");
+    aiData = await generateAiRecommendedTripOpenRouter(model);
   }
 
   let trips = JSON.parse(aiData);
 
   // 3. Safety check
   if (!Array.isArray(trips)) {
-    throw new ApiError(400, "AI did not return array", [
+    throw new ApiError(400, "AI did not return array", null, [
       { field: "trips", message: "AI did not return array" }
     ]);
   }
@@ -106,7 +104,7 @@ export const createTrip = asyncHandler(async (req, res) => {
       message: err.message
     }));
 
-    throw new ApiError(400, "Validation failed", errors)
+    throw new ApiError(400, "Validation failed", null, errors)
   }
 
   const { quickSummary, itinerary } = result.data;

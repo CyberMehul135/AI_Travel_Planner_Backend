@@ -11,7 +11,7 @@ dotenv.config({ quiet: true });
 const API_KEY = process.env.GEMINI_API_KEY;
 const ai = new GoogleGenAI({ apiKey: API_KEY });
 
-export const generateTripAI = async (userInput, model) => {
+export const generateTripFromUserInputGemini = async (userInput, model) => {
   try {
     const res = await ai.models.generateContent({
       model: model,
@@ -32,8 +32,6 @@ export const generateTripAI = async (userInput, model) => {
 
     return res.text;
   } catch (err) {
-    console.log("Gemini Error:", err);
-
     let parsedError = {};
 
     try {
@@ -52,12 +50,32 @@ export const generateTripAI = async (userInput, model) => {
         status: parsedError?.error?.status || "UNKNOWN",
       },
     ];
+    let clientMessage = "Failed to generate trip";
 
-    throw new ApiError(statusCode, message, errors);
+    // Gemini overloaded / high demand
+    if (
+      statusCode === 503 ||
+      message.toLowerCase().includes("high demand")
+    ) {
+      clientMessage =
+        "AI service is busy right now. Please try again later.";
+    }
+
+    // Rate limit / quota exceeded
+    if (
+      statusCode === 429 ||
+      message.toLowerCase().includes("quota") ||
+      message.toLowerCase().includes("rate limit")
+    ) {
+      clientMessage =
+        "AI request limit reached. Please try again later.";
+    }
+
+    throw new ApiError(statusCode, message, clientMessage, errors);
   }
 };
 
-export const generateAIRecommendedTrip = async (model) => {
+export const generateAiRecommendedTripGemini = async (model) => {
   try {
     const res = await ai.models.generateContent({
       model: model,
@@ -78,8 +96,6 @@ export const generateAIRecommendedTrip = async (model) => {
 
     return res.text;
   } catch (err) {
-    console.log("Gemini Error:", err);
-
     let parsedError = {};
 
     try {
@@ -98,7 +114,27 @@ export const generateAIRecommendedTrip = async (model) => {
         status: parsedError?.error?.status || "UNKNOWN",
       },
     ];
+    let clientMessage = "Failed to generate trip";
 
-    throw new ApiError(statusCode, message, errors);
+    // Gemini overloaded / high demand
+    if (
+      statusCode === 503 ||
+      message.toLowerCase().includes("high demand")
+    ) {
+      clientMessage =
+        "AI service is busy right now. Please try again later.";
+    }
+
+    // Rate limit / quota exceeded
+    if (
+      statusCode === 429 ||
+      message.toLowerCase().includes("quota") ||
+      message.toLowerCase().includes("rate limit")
+    ) {
+      clientMessage =
+        "AI request limit reached. Please try again later.";
+    }
+
+    throw new ApiError(statusCode, message, clientMessage, errors);
   }
 };
